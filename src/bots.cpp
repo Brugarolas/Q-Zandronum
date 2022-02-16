@@ -3733,6 +3733,11 @@ void CSkullBot::DeleteEventFromQueue( void )
 // Add a secret bot to the skirmish menu
 CCMD( reveal )
 {
+	// [TSPG]
+	#if defined( SERVER_ONLY ) && defined( SERVER_BLACKLIST )
+		if ( gamestate != GS_STARTUP )
+			return;
+	#endif
 	char	szBuffer[256];
 	ULONG	ulIdx;
 
@@ -3779,6 +3784,12 @@ CCMD( reveal )
 //
 CCMD( addbot )
 {
+		// [TSPG]
+	#if defined( SERVER_ONLY ) && defined( SERVER_BLACKLIST )
+		if ( gamestate != GS_STARTUP )
+			return;
+	#endif
+
 	CSkullBot	*pBot;
 	ULONG		ulPlayerIdx;
 
@@ -3943,6 +3954,12 @@ CCMD( removebots )
 //
 CCMD( listbots )
 {
+	// [TSPG]
+	#if defined( SERVER_ONLY ) && defined( SERVER_BLACKLIST )
+		if ( gamestate != GS_STARTUP )
+			return;
+	#endif
+
 	ULONG	ulIdx;
 	ULONG	ulNumBots = 0;
 

@@ -5028,6 +5028,13 @@ void G_DeferedPlayDemo (const char *name)
 extern bool advancedemo;
 CCMD (playdemo)
 {
+	// [TSPG]
+	#if defined( SERVER_ONLY ) && defined( SERVER_BLACKLIST )
+		if ( gamestate != GS_STARTUP )
+			return;
+	#endif
+
+
 	if (argv.argc() > 1)
 	{
 		// [BB] CLIENTDEMO_FinishPlaying() destroy the arguments, so we have to save
@@ -5050,12 +5057,24 @@ CCMD (playdemo)
 // [BC]
 CCMD( stopdemo )
 {
+	// [TSPG]
+	#if defined( SERVER_ONLY ) && defined( SERVER_BLACKLIST )
+		if ( gamestate != GS_STARTUP )
+			return;
+	#endif
+
 	if ( CLIENTDEMO_IsPlaying( ))
 		CLIENTDEMO_FinishPlaying( );
 }
 
 CCMD (timedemo)
 {
+	// [TSPG]
+	#if defined( SERVER_ONLY ) && defined( SERVER_BLACKLIST )
+		if ( gamestate != GS_STARTUP )
+			return;
+	#endif
+
 	if (argv.argc() > 1)
 	{
 		G_TimeDemo (argv[1]);
@@ -5427,6 +5446,12 @@ bool G_CheckDemoStatus (void)
 //
 CCMD( freeze )
 {
+	// [TSPG]
+	#if defined( SERVER_ONLY ) && defined( SERVER_BLACKLIST )
+		if ( gamestate != GS_STARTUP )
+			return;
+	#endif
+
 	// [Dusk] Don't allow freeze while playing a demo
 	if ( CLIENTDEMO_IsPlaying( ) == true ) {
 		Printf ("Cannot freeze during demo playback!\n");
