@@ -3083,11 +3083,6 @@ FMOD_RESULT FMODSoundRenderer::SetSystemReverbProperties(const REVERB_PROPERTIES
 #endif
 }
 
-MIDIDevice* FMODSoundRenderer::CreateMIDIDevice() const
-{
-	return new SndSysMIDIDevice;
-}
-
 #endif //NO_FMOD
 
 //==========================================================================

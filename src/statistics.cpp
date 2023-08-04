@@ -63,7 +63,6 @@
 #include "decallib.h"
 #include "a_doomglobal.h"
 #include "autosegs.h"
-#include "i_cd.h"
 #include "stats.h"
 #include "a_sharedglobal.h"
 #include "v_text.h"

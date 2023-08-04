@@ -54,6 +54,7 @@
 // [BC] New #includes.
 #include "network.h"
 #include "cl_demo.h"
+#include <zmusic.h>
 
 // MACROS ------------------------------------------------------------------
 
@@ -1371,7 +1372,7 @@ static void S_AddSNDINFO (int lump)
 				sc.MustGetString();
 				if (sc.Compare("timidity")) MidiDevices[nm] = MDEV_TIMIDITY;
 				else if (sc.Compare("fmod") || sc.Compare("sndsys")) MidiDevices[nm] = MDEV_SNDSYS;
-				else if (sc.Compare("standard")) MidiDevices[nm] = MDEV_MMAPI;
+				else if (sc.Compare("standard")) MidiDevices[nm] = MDEV_STANDARD;
 				else if (sc.Compare("opl")) MidiDevices[nm] = MDEV_OPL;
 				else if (sc.Compare("default")) MidiDevices[nm] = MDEV_DEFAULT;
 				else if (sc.Compare("fluidsynth")) MidiDevices[nm] = MDEV_FLUIDSYNTH;
