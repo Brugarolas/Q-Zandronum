@@ -39,30 +39,6 @@ static void AddDefaultMidiDevices(FOptionValues *opt)
 
 }
 
-static void MIDIDeviceChanged(int newdev)
-{
-	static int oldmididev = INT_MIN;
-
-	// If a song is playing, move it to the new device.
-	if (oldmididev != newdev)
-	{
-		if (currSong != NULL && currSong->IsMIDI())
-		{
-			MusInfo *song = currSong;
-			if (song->m_Status == MusInfo::STATE_Playing)
-			{
-				song->Stop();
-				song->Start(song->m_Looping);
-			}
-		}
-		else
-		{
-			S_MIDIDeviceChanged();
-		}
-	}
-	oldmididev = newdev;
-}
-
 #ifdef HAVE_FLUIDSYNTH
 #define DEF_MIDIDEVICE -5
 #else
@@ -84,7 +60,7 @@ CUSTOM_CVAR (Int, snd_mididevice, DEF_MIDIDEVICE, CVAR_ARCHIVE|CVAR_GLOBALCONFIG
 		return;
 	}
 	mididevice = MAX<UINT>(0, self);
-	MIDIDeviceChanged(self);
+	S_MIDIDeviceChanged();
 }
 
 void I_InitMusicWin32 ()
@@ -208,7 +184,7 @@ CUSTOM_CVAR (Int, snd_mididevice, DEF_MIDIDEVICE, CVAR_ARCHIVE|CVAR_GLOBALCONFIG
 	else if (self > -1)
 		self = -1;
 	else
-		MIDIDeviceChanged(self);
+		S_MIDIDeviceChanged();
 }
 
 void I_BuildMIDIMenuList (FOptionValues *opt)

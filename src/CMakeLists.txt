@@ -274,7 +274,7 @@ if( NOT NO_OPENAL )
 		include_directories( ${OPENAL_INCLUDE_DIR} )
 		mark_as_advanced(CLEAR OPENAL_LIBRARY)
 		if( OPENAL_LIBRARY )
-			set( ZDOOM_LIBS ${OPENAL_LIBRARY} ${ZDOOM_LIBS} )
+			set( ZDOOM_LIBS ${ZDOOM_LIBS} ${OPENAL_LIBRARY} )
 		else( OPENAL_LIBRARY )
 			set( NO_OPENAL ON )
 		endif( OPENAL_LIBRARY )
@@ -282,6 +282,18 @@ if( NOT NO_OPENAL )
 	else( NOT NO_OPENAL )
 		set( NO_OPENAL ON )
 endif( NOT NO_OPENAL )
+endif( NOT NO_SOUND )
+
+if( NOT NO_SOUND )
+	find_package( ZMusic )
+	mark_as_advanced(CLEAR ZMUSIC_INCLUDE_DIR)
+	mark_as_advanced(CLEAR ZMUSIC_LIBRARY)
+	include_directories( ${ZMUSIC_INCLUDE_DIR} )
+	if( ZMUSIC_INCLUDE_DIR )
+		if( ZMUSIC_LIBRARY )
+			set( ZDOOM_LIBS ${ZDOOM_LIBS} "${ZMUSIC_LIBRARY}" )
+		endif( ZMUSIC_LIBRARY )
+	endif( ZMUSIC_INCLUDE_DIR )
 endif( NOT NO_SOUND )
 
 if( X64 )
@@ -735,7 +747,6 @@ set( PLAT_WIN32_SOURCES
 	win32/fb_ddraw.cpp
 	win32/hardware.cpp
 	win32/helperthread.cpp
-	win32/i_cd.cpp
 	win32/i_crash.cpp
 	win32/i_input.cpp
 	win32/i_keyboard.cpp
@@ -770,7 +781,6 @@ set( PLAT_WIN32_SOURCES ${PLAT_WIN32_SOURCES}
 set( PLAT_SDL_SOURCES
 	sdl/crashcatcher.c
 	sdl/hardware.cpp
-	sdl/i_cd.cpp
 	sdl/i_input.cpp
 	sdl/i_joystick.cpp
 	sdl/i_main.cpp
@@ -1377,14 +1387,6 @@ add_executable( zdoom WIN32
 	menu/readthis.cpp
 	menu/videomenu.cpp
 	${GL_SOURCES}
-	oplsynth/fmopl.cpp
-	oplsynth/mlopl.cpp
-	oplsynth/mlopl_io.cpp
-	oplsynth/music_opldumper_mididevice.cpp
-	oplsynth/music_opl_mididevice.cpp
-	oplsynth/opl_mus_player.cpp
-	oplsynth/dosbox/opl.cpp
-	oplsynth/OPL3.cpp
 	resourcefiles/ancientzip.cpp
 	resourcefiles/file_7z.cpp
 	resourcefiles/file_grp.cpp
@@ -1402,24 +1404,7 @@ add_executable( zdoom WIN32
 	sound/sndfile_decoder.cpp
 	sound/i_music.cpp
 	sound/i_sound.cpp
-	sound/music_cd.cpp
-	sound/music_dumb.cpp
-	sound/music_gme.cpp
-	sound/music_mus_midiout.cpp
-	sound/music_smf_midiout.cpp
-	sound/music_hmi_midiout.cpp
-	sound/music_xmi_midiout.cpp
-	sound/music_midistream.cpp
 	sound/music_midi_base.cpp
-	sound/music_midi_timidity.cpp
-	sound/music_mus_opl.cpp
-	sound/music_stream.cpp
-	sound/music_fluidsynth_mididevice.cpp
-	sound/music_audiotoolbox_mididevice.cpp
-	sound/music_softsynth_mididevice.cpp
-	sound/music_timidity_mididevice.cpp
-	sound/music_win_mididevice.cpp
-	sound/music_pseudo_mididevice.cpp
 	textures/animations.cpp
 	textures/anim_switches.cpp
 	textures/automaptexture.cpp

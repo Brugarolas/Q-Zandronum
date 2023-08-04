@@ -151,7 +151,6 @@ public:
 	void PrintDriversList();
 	FString GatherStats();
 
-	virtual MIDIDevice* CreateMIDIDevice() const override;
 private:
 	struct {
 		bool EXT_EFX;

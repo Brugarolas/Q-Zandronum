@@ -156,8 +156,6 @@ public:
 
     virtual void DrawWaveDebug(int mode);
 
-    
-	virtual MIDIDevice* CreateMIDIDevice() const = 0;
 
 protected:
     virtual SoundDecoder *CreateDecoder(FileReader *reader);

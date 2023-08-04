@@ -6,6 +6,7 @@
 #include "basictypes.h"
 #include "vectors.h"
 #include "tarray.h"
+#include <zmusic.h>
 
 class FileReader;
 
@@ -106,20 +107,6 @@ struct FISoundChannel
     float    DistanceSqr;
     bool        ManualRolloff;
 };
-
-enum SampleType
-{
-    SampleType_UInt8,
-    SampleType_Int16
-};
-enum ChannelConfig
-{
-    ChannelConfig_Mono,
-    ChannelConfig_Stereo
-};
-
-const char *GetSampleTypeName(enum SampleType type);
-const char *GetChannelConfigName(enum ChannelConfig chan);
 
 struct SoundDecoder
 {

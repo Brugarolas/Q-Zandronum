@@ -284,6 +284,16 @@ void S_Sound (fixed_t x, fixed_t y, fixed_t z, int channel, FSoundID sfxid, floa
 #define ATTN_IDLE				1.001f
 #define ATTN_STATIC				3.f	// diminish very rapidly with distance
 
+struct MusPlayingInfo
+{
+	FString name;
+	ZMusic_MusicStream handle;
+	int   baseorder;
+	float replayGainFactor = 1.0f; // TODO we don't use this in Q-Zan, at least for now
+	bool  loop;
+	bool isfloat;
+};
+
 int S_PickReplacement (int refid);
 void S_CacheRandomSound (sfxinfo_t *sfx);
 
@@ -338,6 +348,7 @@ void S_RestartMusic ();
 void S_MIDIDeviceChanged();
 
 int S_GetMusic (char **name);
+MusPlayingInfo *S_GetMusPlaying();
 
 // Stops the music for sure.
 void S_StopMusic (bool force);
@@ -399,17 +410,6 @@ void S_SetEnvironment (const ReverbContainer *settings);
 ReverbContainer *S_FindEnvironment (const char *name);
 ReverbContainer *S_FindEnvironment (int id);
 void S_AddEnvironment (ReverbContainer *settings);
-
-enum EMidiDevice
-{
-	MDEV_DEFAULT = -1,
-	MDEV_MMAPI = 0,
-	MDEV_OPL = 1,
-	MDEV_SNDSYS= 2,
-	MDEV_TIMIDITY = 3,
-	MDEV_FLUIDSYNTH = 4,
-	MDEV_GUS = 5,
-};
 
 typedef TMap<FName, FName> MusicAliasMap;
 typedef TMap<FName, int> MidiDeviceMap;

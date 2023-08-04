@@ -30,7 +30,6 @@
 #include "i_system.h"
 #include "i_sound.h"
 #include "i_music.h"
-#include "i_cd.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
 #include "s_playlist.h"
@@ -57,6 +56,7 @@
 #include "network.h"
 #include "sv_commands.h"
 #include "cl_main.h"
+#include <zmusic.h>
 
 // MACROS ------------------------------------------------------------------
 
@@ -81,14 +81,6 @@
 #define S_STEREO_SWING			0.75
 
 // TYPES -------------------------------------------------------------------
-
-struct MusPlayingInfo
-{
-	FString name;
-	MusInfo *handle;
-	int   baseorder;
-	bool  loop;
-};
 
 enum
 {
@@ -1901,7 +1893,8 @@ void S_PauseSound (bool notmusic, bool notsfx)
 
 	if (!notmusic && mus_playing.handle && !MusicPaused)
 	{
-		mus_playing.handle->Pause();
+		ZMusic_Pause(mus_playing.handle);
+		S_PauseStream(true);
 		MusicPaused = true;
 	}
 	if (!notsfx)
@@ -1926,7 +1919,8 @@ void S_ResumeSound (bool notsfx)
 
 	if (mus_playing.handle && MusicPaused)
 	{
-		mus_playing.handle->Resume();
+		ZMusic_Resume(mus_playing.handle);
+		S_PauseStream(false);
 		MusicPaused = false;
 	}
 	if (!notsfx)
@@ -2103,13 +2097,13 @@ void S_UpdateSounds (AActor *listenactor)
 	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
 		return;
 
-	I_UpdateMusic();
+	ZMusic_Update(mus_playing.handle);
 
 	// [RH] Update music and/or playlist. IsPlaying() must be called
 	// to attempt to reconnect to broken net streams and to advance the
 	// playlist when the current song finishes.
 	if (mus_playing.handle != NULL &&
-		!mus_playing.handle->IsPlaying() &&
+		!ZMusic_IsPlaying(mus_playing.handle) &&
 		PlayList)
 	{
 		PlayList->Advance();
@@ -2598,41 +2592,30 @@ bool S_ChangeMusic (const char *musicname, int order, bool looping, bool force)
 	if (!mus_playing.name.IsEmpty() &&
 		mus_playing.handle != NULL &&
 		stricmp (mus_playing.name, musicname) == 0 &&
-		mus_playing.handle->m_Looping == looping)
+		ZMusic_IsLooping(mus_playing.handle) == looping)
 	{
 		if (order != mus_playing.baseorder)
 		{
-			if (mus_playing.handle->SetSubsong(order))
+			if (ZMusic_SetSubsong(mus_playing.handle, order))
 			{
 				mus_playing.baseorder = order;
 			}
 		}
-		else if (!mus_playing.handle->IsPlaying())
+		else if (!ZMusic_IsPlaying(mus_playing.handle))
 		{
-			mus_playing.handle->Play(looping, order);
+			ZMusic_Start(mus_playing.handle, order, looping);
+			S_CreateStream();
 		}
 		return true;
 	}
 
-	if (strnicmp (musicname, ",CD,", 4) == 0)
-	{
-		int track = strtoul (musicname+4, NULL, 0);
-		const char *more = strchr (musicname+4, ',');
-		unsigned int id = 0;
-
-		if (more != NULL)
-		{
-			id = strtoul (more+1, NULL, 16);
-		}
-		S_StopMusic (true);
-		mus_playing.handle = I_RegisterCDSong (track, id);
-	}
-	else
+	// [geNia] We don't support CD music anymore
+	if (strnicmp (musicname, ",CD,", 4) != 0)
 	{
 		int lumpnum = -1;
 		int offset = 0, length = 0;
-		int device = MDEV_DEFAULT;
-		MusInfo *handle = NULL;
+		EMidiDevice device = MDEV_DEFAULT;
+		ZMusic_MusicStream handle = nullptr;
 		FName musicasname = musicname;
 
 		FName *aliasp = MusicAliases.CheckKey(musicasname);
@@ -2643,7 +2626,7 @@ bool S_ChangeMusic (const char *musicname, int order, bool looping, bool force)
 		}
 
 		int *devp = MidiDevices.CheckKey(musicasname);
-		if (devp != NULL) device = *devp;
+		if (devp != NULL) device = (EMidiDevice)*devp;
 
 		// Strip off any leading file:// component.
 		if (strncmp(musicname, "file://", 7) == 0)
@@ -2653,51 +2636,36 @@ bool S_ChangeMusic (const char *musicname, int order, bool looping, bool force)
 
 		if (!FileExists (musicname))
 		{
-			if ((lumpnum = Wads.CheckNumForFullName (musicname, true, ns_music)) == -1)
+			lumpnum = Wads.CheckNumForFullName (musicname, true, ns_music);
+			if (lumpnum == -1)
 			{
-				if (strstr(musicname, "://") > musicname)
+				Printf("Music \"%s\" not found\n", musicname);
+				return false;
+			}
+			if (!Wads.IsUncompressedFile(lumpnum))
+			{
+				// We must cache the music data and use it from memory.
+
+				// shut down old music before reallocating and overwriting the cache!
+				S_StopMusic (true);
+
+				offset = -1;							// this tells the low level code that the music 
+														// is being used from memory
+				length = Wads.LumpLength (lumpnum);
+				if (length == 0)
 				{
-					// Looks like a URL; try it as such.
-					handle = I_RegisterURLSong(musicname);
-					if (handle == NULL)
-					{
-						Printf ("Could not open \"%s\"\n", musicname);
-						return false;
-					}
-				}
-				else
-				{
-					Printf ("Music \"%s\" not found\n", musicname);
 					return false;
 				}
+				musiccache.Resize(length);
+				Wads.ReadLump(lumpnum, &musiccache[0]);
 			}
-			if (handle == NULL)
+			else
 			{
-				if (!Wads.IsUncompressedFile(lumpnum))
+				offset = Wads.GetLumpOffset (lumpnum);
+				length = Wads.LumpLength (lumpnum);
+				if (length == 0)
 				{
-					// We must cache the music data and use it from memory.
-
-					// shut down old music before reallocating and overwriting the cache!
-					S_StopMusic (true);
-
-					offset = -1;							// this tells the low level code that the music 
-															// is being used from memory
-					length = Wads.LumpLength (lumpnum);
-					if (length == 0)
-					{
-						return false;
-					}
-					musiccache.Resize(length);
-					Wads.ReadLump(lumpnum, &musiccache[0]);
-				}
-				else
-				{
-					offset = Wads.GetLumpOffset (lumpnum);
-					length = Wads.LumpLength (lumpnum);
-					if (length == 0)
-					{
-						return false;
-					}
+					return false;
 				}
 			}
 		}
@@ -2716,19 +2684,20 @@ bool S_ChangeMusic (const char *musicname, int order, bool looping, bool force)
 		}
 
 		// load & register it
-		if (handle != NULL)
+		//CheckReplayGain(musicname, device, "");
+		if (offset != -1)
 		{
-			mus_playing.handle = handle;
-		}
-		else if (offset != -1)
-		{
-			mus_playing.handle = I_RegisterSong (lumpnum != -1 ?
+			mus_playing.handle = ZMusic_OpenSongFile (lumpnum != -1 ?
 				Wads.GetWadFullName (Wads.GetLumpFile (lumpnum)) :
-				musicname, NULL, offset, length, device);
+				musicname, device, "");
 		}
 		else
 		{
-			mus_playing.handle = I_RegisterSong (NULL, &musiccache[0], -1, length, device);
+			mus_playing.handle = ZMusic_OpenSongMem(&musiccache[0], (size_t)length, device, "");
+		}
+		if (mus_playing.handle == nullptr)
+		{
+			Printf("Unable to load %s: %s\n", musicasname.GetChars(), ZMusic_GetLastError());
 		}
 	}
 
@@ -2739,7 +2708,8 @@ bool S_ChangeMusic (const char *musicname, int order, bool looping, bool force)
 
 	if (mus_playing.handle != 0)
 	{ // play it
-		mus_playing.handle->Start(looping, S_GetMusicVolume (musicname), order);
+		ZMusic_Start(mus_playing.handle, order, true);
+		S_CreateStream();
 		mus_playing.baseorder = order;
 		return true;
 	}
@@ -2775,10 +2745,10 @@ void S_RestartMusic ()
 
 void S_MIDIDeviceChanged()
 {
-	if (mus_playing.handle != NULL && mus_playing.handle->IsMIDI())
+	if (mus_playing.handle != NULL && ZMusic_IsMIDI(mus_playing.handle))
 	{
-		mus_playing.handle->Stop();
-		mus_playing.handle->Start(mus_playing.loop, -1, mus_playing.baseorder);
+		ZMusic_Stop(mus_playing.handle);
+		ZMusic_Start(mus_playing.handle, mus_playing.baseorder, mus_playing.loop);
 	}
 }
 
@@ -2830,15 +2800,27 @@ void S_StopMusic (bool force)
 		if (mus_playing.handle != NULL)
 		{
 			if (MusicPaused)
-				mus_playing.handle->Resume();
+				ZMusic_Resume(mus_playing.handle);
 
-			mus_playing.handle->Stop();
-			delete mus_playing.handle;
+			S_StopStream();
+			ZMusic_Stop(mus_playing.handle);
+			ZMusic_Close(mus_playing.handle);
 			mus_playing.handle = NULL;
 		}
 		LastSong = mus_playing.name;
 		mus_playing.name = "";
 	}
+}
+
+//==========================================================================
+//
+// S_StopMusic
+//
+//==========================================================================
+
+MusPlayingInfo *S_GetMusPlaying ()
+{
+	return &mus_playing;
 }
 
 //==========================================================================
