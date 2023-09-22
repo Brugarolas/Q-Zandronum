@@ -338,7 +338,9 @@ void G_DoNewGame (void)
 
 	if (d_skill != -1)
 	{
-		gameskill = d_skill;
+		UCVarValue Val;
+		Val.Int = d_skill;
+		gameskill.ForceSet(Val, CVAR_Int);
 	}
 	G_InitNew (d_mapname, false);
 	gameaction = ga_nothing;
