@@ -1855,6 +1855,11 @@ void G_StartTravel ()
 	if ( G_AllowTravel( ) == false )
 		return;
 
+	// [geNia] Kick all bots before travel
+	// They need to be kicked anyway, but doing that after travel results in BeefCafe error
+	if (CAMPAIGN_InCampaign())
+		BOTS_RemoveAllBots( false );
+
 	for (int i = 0; i < MAXPLAYERS; ++i)
 	{
 		if (playeringame[i])
