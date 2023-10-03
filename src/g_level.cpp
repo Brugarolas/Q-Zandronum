@@ -2400,6 +2400,8 @@ void G_SnapshotLevel ()
 
 		SaveVersion = SAVEVER;
 		G_SerializeLevel (arc, false);
+		bool inCampaign = CAMPAIGN_InCampaign();
+		arc << inCampaign;
 	}
 }
 
@@ -2426,6 +2428,9 @@ void G_UnSnapshotLevel (bool hubLoad)
 		if (hubLoad)
 			arc.SetHubTravel ();
 		G_SerializeLevel (arc, hubLoad);
+		bool inCampaign;
+		arc << inCampaign;
+		CAMPAIGN_SetInCampaign(inCampaign);
 		arc.Close ();
 		level.FromSnapshot = true;
 
