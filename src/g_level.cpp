@@ -1312,6 +1312,9 @@ void G_DoLoadLevel (int position, bool autosave)
 
 			// Also, clear out existing bots.
 			BOTS_RemoveAllBots( false );
+
+			// Also, adjust bots skill
+			BOTS_SetCampaignSkillOffset( pInfo->lBotsSkillOffset );
 			
 			for ( i = 0; i < MAXCUSTOMCVARS; i++ )
 			{
@@ -1372,12 +1375,14 @@ void G_DoLoadLevel (int position, bool autosave)
 		{
 			// We're now NOT in a campaign.
 			CAMPAIGN_SetInCampaign( false );
+			BOTS_SetCampaignSkillOffset( 0 );
 		}
 	}
 	else
 	{
 		// We're now NOT in a campaign.
 		CAMPAIGN_SetInCampaign( false );
+		BOTS_SetCampaignSkillOffset( 0 );
 	}
 
 	if (NextSkill >= 0)
